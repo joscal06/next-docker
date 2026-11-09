@@ -1,0 +1,43 @@
+name: Docker build & run
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: docker build
+        run: docker build -t next-docker .
+
+      - name: docker run
+        run: docker run -d --name next-docker -p 3000:3000 next-docker
+
+      - name: Esperar a que el contenedor esté saludable
+        run: |
+          for i in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' next-docker)
+            echo "Intento $i: $status"
+            [ "$status" = "healthy" ] && exit 0
+            sleep 3
+          done
+          docker logs next-docker
+          exit 1
+
+      - name: Probar la aplicación
+        run: |
+          curl -fsS http://localhost:3000/api/health
+          curl -fsS http://localhost:3000/ | grep -q "Ejecutándose dentro de un contenedor Docker"
+          echo "La página confirma que corre dentro de Docker"
+
+      - name: Información de la imagen
+        if: always()
+        run: |
+          docker images next-docker
+          docker exec next-docker whoami || true
+          docker logs next-docker || true
