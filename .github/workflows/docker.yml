@@ -37,20 +37,36 @@ jobs:
 
       - name: Resumen de la verificación
         run: |
+          SIZE=$(docker images next-docker --format '{{.Size}}')
+          NODE=$(docker exec next-docker node -p 'process.version')
+          ALPINE=$(docker exec next-docker cat /etc/alpine-release)
+          USUARIO=$(docker exec next-docker whoami)
+          HOST=$(docker exec next-docker hostname)
+          HEALTH=$(docker inspect --format '{{.State.Health.Status}}' next-docker)
+          PUERTO=$(docker port next-docker 3000 | head -1)
+          API=$(curl -fsS http://localhost:3000/api/health)
+          PAGINA=$(curl -fsS http://localhost:3000/ | grep -o 'Ejecutándose dentro de un contenedor Docker' | head -1)
+
+          # Anotaciones: visibles en la página pública del workflow sin iniciar sesión
+          echo "::notice title=1. Imagen construida::next-docker ($SIZE) sobre Node.js $NODE y Alpine Linux $ALPINE"
+          echo "::notice title=2. Contenedor en ejecución::Estado $HEALTH, usuario $USUARIO, hostname $HOST, puerto $PUERTO -> 3000"
+          echo "::notice title=3. GET /api/health::$API"
+          echo "::notice title=4. Página principal::$PAGINA"
+
           {
             echo "## Contenedor verificado"
             echo ""
             echo "| Dato | Valor |"
             echo "| --- | --- |"
-            echo "| Imagen | \`next-docker\` ($(docker images next-docker --format '{{.Size}}')) |"
-            echo "| Node.js | \`$(docker exec next-docker node -p 'process.version')\` |"
-            echo "| Sistema base | Alpine Linux $(docker exec next-docker cat /etc/alpine-release) |"
-            echo "| Usuario del proceso | \`$(docker exec next-docker whoami)\` |"
-            echo "| Hostname (ID del contenedor) | \`$(docker exec next-docker hostname)\` |"
-            echo "| Estado del HEALTHCHECK | \`$(docker inspect --format '{{.State.Health.Status}}' next-docker)\` |"
-            echo "| Puerto publicado | \`$(docker port next-docker 3000 | head -1)\` → 3000 |"
-            echo "| GET /api/health | \`$(curl -fsS http://localhost:3000/api/health)\` |"
-            echo "| Página principal | $(curl -fsS http://localhost:3000/ | grep -o 'Ejecutándose dentro de un contenedor Docker' | head -1) |"
+            echo "| Imagen | \`next-docker\` ($SIZE) |"
+            echo "| Node.js | \`$NODE\` |"
+            echo "| Sistema base | Alpine Linux $ALPINE |"
+            echo "| Usuario del proceso | \`$USUARIO\` |"
+            echo "| Hostname (ID del contenedor) | \`$HOST\` |"
+            echo "| Estado del HEALTHCHECK | \`$HEALTH\` |"
+            echo "| Puerto publicado | \`$PUERTO\` → 3000 |"
+            echo "| GET /api/health | \`$API\` |"
+            echo "| Página principal | $PAGINA |"
             echo ""
             echo "### docker logs"
             echo '```'
