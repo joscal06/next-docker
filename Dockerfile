@@ -27,7 +27,8 @@ FROM base AS builder
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# La caché de compilación (.next/cache) no se usa en tiempo de ejecución
+RUN npm run build && rm -rf .next/cache
 
 # ---------------------------------------------------------------------------
 # Etapa 4 · prod-deps: solo dependencias de producción para la imagen final
@@ -35,7 +36,12 @@ RUN npm run build
 FROM base AS prod-deps
 RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+# El lockfile incluye los binarios nativos para glibc y para musl; Alpine usa
+# musl, así que se eliminan las variantes glibc (-gnu / linux-*) que no se usan.
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev \
+ && rm -rf node_modules/@next/swc-*-gnu \
+           node_modules/@img/sharp-linux-* \
+           node_modules/@img/sharp-libvips-linux-*
 
 # ---------------------------------------------------------------------------
 # Etapa 5 · runner: imagen final y mínima que ejecuta `next start`

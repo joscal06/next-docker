@@ -106,8 +106,8 @@ compilación, devDependencies ni código fuente:
 | --- | --- |
 | `base` | Parte de `node:22-alpine`, define `/app` y desactiva la telemetría de Next.js. |
 | `deps` | Copia solo `package.json` y `package-lock.json` e instala **todas** las dependencias con `npm ci`. Al copiar primero estos archivos, Docker reutiliza la caché de esta capa mientras no cambien las dependencias. |
-| `builder` | Copia el código y ejecuta `next build` (`npm run build`). |
-| `prod-deps` | Instala solo las dependencias de producción con `npm ci --omit=dev`. |
+| `builder` | Copia el código, ejecuta `next build` (`npm run build`) y borra `.next/cache`, que no se usa en tiempo de ejecución. |
+| `prod-deps` | Instala solo las dependencias de producción con `npm ci --omit=dev` y elimina los binarios nativos para glibc (`@next/swc-*-gnu`, `@img/sharp-linux-*`), que no sirven en Alpine (musl). |
 | `runner` | Imagen final: copia `node_modules` de producción, `.next`, `public`, `package.json` y `next.config.ts`; expone el puerto **3000** y arranca con **`next start`**. |
 
 Buenas prácticas aplicadas:

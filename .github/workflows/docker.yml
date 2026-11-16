@@ -48,7 +48,8 @@ jobs:
           PAGINA=$(curl -fsS http://localhost:3000/ | grep -o 'Ejecutándose dentro de un contenedor Docker' | head -1)
 
           # Anotaciones: visibles en la página pública del workflow sin iniciar sesión
-          echo "::notice title=1. Imagen construida::next-docker ($SIZE) sobre Node.js $NODE y Alpine Linux $ALPINE"
+          PESOS=$(docker exec next-docker du -sh node_modules .next | awk '{printf "%s %s, ", $2, $1}' | sed 's/, $//')
+          echo "::notice title=1. Imagen construida::next-docker ($SIZE) sobre Node.js $NODE y Alpine Linux $ALPINE. Contenido: $PESOS"
           echo "::notice title=2. Contenedor en ejecución::Estado $HEALTH, usuario $USUARIO, hostname $HOST, puerto $PUERTO -> 3000"
           echo "::notice title=3. GET /api/health::$API"
           echo "::notice title=4. Página principal::$PAGINA"
