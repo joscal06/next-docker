@@ -10,7 +10,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: docker build
         run: docker build -t next-docker .
@@ -34,6 +34,29 @@ jobs:
           curl -fsS http://localhost:3000/api/health
           curl -fsS http://localhost:3000/ | grep -q "Ejecutándose dentro de un contenedor Docker"
           echo "La página confirma que corre dentro de Docker"
+
+      - name: Resumen de la verificación
+        run: |
+          {
+            echo "## Contenedor verificado"
+            echo ""
+            echo "| Dato | Valor |"
+            echo "| --- | --- |"
+            echo "| Imagen | \`next-docker\` ($(docker images next-docker --format '{{.Size}}')) |"
+            echo "| Node.js | \`$(docker exec next-docker node -p 'process.version')\` |"
+            echo "| Sistema base | Alpine Linux $(docker exec next-docker cat /etc/alpine-release) |"
+            echo "| Usuario del proceso | \`$(docker exec next-docker whoami)\` |"
+            echo "| Hostname (ID del contenedor) | \`$(docker exec next-docker hostname)\` |"
+            echo "| Estado del HEALTHCHECK | \`$(docker inspect --format '{{.State.Health.Status}}' next-docker)\` |"
+            echo "| Puerto publicado | \`$(docker port next-docker 3000 | head -1)\` → 3000 |"
+            echo "| GET /api/health | \`$(curl -fsS http://localhost:3000/api/health)\` |"
+            echo "| Página principal | $(curl -fsS http://localhost:3000/ | grep -o 'Ejecutándose dentro de un contenedor Docker' | head -1) |"
+            echo ""
+            echo "### docker logs"
+            echo '```'
+            docker logs next-docker 2>&1
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Información de la imagen
         if: always()
